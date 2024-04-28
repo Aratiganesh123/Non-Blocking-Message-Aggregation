@@ -162,79 +162,6 @@ def compute_accuracy_in_batches(test_logits, test_labels, device, batch_size=102
 
 
 
-
-
-
-# @profile
-# def adapted_inference(model, g, features, test_nid, labels, device, batch_size):
-#     """
-#     Perform inference on a graph node-wise, i.e., processing each node individually.
-    
-#     Args:
-#         model: The trained GNN model.
-#         graph: The graph on which inference is performed.
-#         features: Node features for the graph.
-    
-#     Returns:
-#         predictions: Predicted classes for each node in the graph.
-#     """
-
-#     start_time = time.time()
-#     model.eval()  
-#     model.to(device) 
-    
-#     g = g.to(device) 
-#     features = features.to(device)  
-#     labels = labels.to(device) 
-#     test_nid = test_nid.to(device)  
-
-#     out_features = model.conv2.out_features if hasattr(model.conv2, 'out_features') else model.out_features
-   
-#     sampler = dgl.dataloading.MultiLayerFullNeighborSampler(1)
-#     dataloader = dgl.dataloading.DataLoader(
-#         g,
-#         torch.arange(g.number_of_nodes()).to(device), 
-#         sampler,
-#         batch_size=batch_size,
-#         shuffle=False,
-#         drop_last=False,
-#         device=device  
-#     )
-
-   
-#     layers = [model.conv1, model.conv2, model.conv3]  
-
-#     # Perform the computation layer by layer
-#     for l, layer in enumerate(layers):
-#         y = torch.zeros((g.num_nodes(), layer._out_feats if l != len(layers) - 1 else out_features), device=device)
-
-#         # Process each batch
-#         for input_nodes, output_nodes, blocks in tqdm.tqdm(dataloader):
-#             block = blocks[0]
-#             input_features = features[input_nodes]
-#             h = layer(block, input_features)
-
-#             if l != len(layers) - 1:
-#                 h = F.relu(h)
-
-#             y[output_nodes] = h.detach()
-
-#         features = y  # Output of this layer is the input to the next
-
-#     print("Feature propagation completed. Calculating accuracy...")
-
-#     test_logits = features[test_nid]
-#     test_labels = labels[test_nid]
-#     correct_predictions = compute_accuracy_in_batches(test_logits, test_labels, device, batch_size)
-#     test_accuracy = correct_predictions / test_nid.size(0)
-#     node_inference_time = time.time() - start_time
-
-#     print(f"Node-wise inference time: {node_inference_time:.3f} seconds")
-#     print(f"Test Accuracy: {test_accuracy:.4f} ({correct_predictions}/{test_nid.size(0)})")
-
-#     return test_logits  # Return logits or predictions as needed
-
-
 @profile
 def adapted_inference(model, g, features, test_nid, labels, device, batch_size):
     """
@@ -258,7 +185,7 @@ def adapted_inference(model, g, features, test_nid, labels, device, batch_size):
     labels = labels.to(device) 
     test_nid = test_nid.to(device)  
 
-    out_features = model.conv2.out_features if hasattr(model.conv2, 'out_features') else model.out_features
+    out_features = model.conv2.out_features if hasattr(model.conv2, 'out_features') else model.out_features #TODO refactor to change conv2 to conv3 for threelayerGCN
    
     sampler = dgl.dataloading.MultiLayerFullNeighborSampler(1)
     dataloader = dgl.dataloading.DataLoader(
@@ -272,7 +199,7 @@ def adapted_inference(model, g, features, test_nid, labels, device, batch_size):
     )
 
    
-    layers = [model.conv1, model.conv2]  
+    layers = [model.conv1, model.conv2]  #TODO refactor to add model.conv3 for three layer GCN
 
     # Perform the computation layer by layer
     for l, layer in enumerate(layers):
